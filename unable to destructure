@@ -1,0 +1,76 @@
+const express = require("express");
+const app = express();
+app.use(express.json());
+const { open } = require("sqlite");
+const bcrypt = require("bcrypt");
+const sqlite3 = require("sqlite3");
+
+const path = require("path");
+const dbPath = path.join(__dirname, "userData.db");
+
+let database = null;
+
+const initializeDBAndServer = async () => {
+  try {
+    open({
+      filename: dbPath,
+      driver: sqlite3.Database,
+    });
+
+    app.listen(3000, () => {
+      console.log("server is running at 3000");
+    });
+  } catch (e) {
+    console.log(`DATABASE ERROR ${e.message}`);
+    process.exit(1);
+  }
+};
+
+initializeDBAndServer();
+
+app.post("/register", async (request, response) => {
+  const { username, name, password, gender, location } = request.body;
+  const hashedPassword = bcrypt.hash(password, 10);
+
+  const getUserDetailsQuery = `
+    SELECT * FROM user 
+    WHERE username = '${username}';`;
+
+  const dbUser = await database.all(getUserDetailsQuery);
+
+  if (dbUser === undefined) {
+    const updateUserQuery = `
+        INSERT INTO user 
+        (username , name , password ,gender ,location)
+        VALUES (
+            '${username}',
+            '${name}',
+            '${hashedPassword}',
+            '${gender}',
+            '${location}'
+        );`;
+
+    await database.run(updateUserQuery);
+    response.send("User created successfully");
+  } else {
+    response.status(400);
+    response.send("User already exists");
+  }
+});
+
+
+
+
+res.http file
+
+POST http://localhost:3000/register
+Content-Type: application/json
+
+{
+  "username": "adam_richard",
+  "name": "Adam Richard",
+  "password": "richard_567",
+  "gender": "male",
+  "location": "Detroit"
+}
+
